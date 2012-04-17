@@ -19,10 +19,23 @@ Meteor.http = Meteor.http || {};
 
     method = (method || "").toUpperCase();
 
-    // Re-enter user code in a Fiber
-    callback = Meteor.bindEnvironment(callback, function(e) {
-      Meteor._debug("Exception in callback of Meteor.http.call", e.stack);
-    });
+
+    var fut;
+    if (! callback) {
+      // Sync mode
+      fut = new Future;
+      callback = function(error, result) {
+        fut.ret(result);
+      };
+    } else {
+      // Async mode
+      // re-enter user code in a Fiber
+      callback = Meteor.bindEnvironment(callback, function(e) {
+        Meteor._debug("Exception in callback of Meteor.http.call", e.stack);
+      });
+    }
+
+    callback = _.once(callback); // only call the callback once!
 
     if (! /^https?:\/\//.test(url))
       throw new Error("url must be absolute and start with http:// or https://");
@@ -78,6 +91,9 @@ Meteor.http = Meteor.http || {};
     req.on("error", callback); // calls callback(error)
 
     req.end();
+
+    if (fut)
+      return fut.wait(); // block in sync mode
   };
 
 })();

@@ -11,18 +11,26 @@ testAsyncMulti("httpcall - basic", [
 
     var basic_get = function(url, options, expected_url) {
 
-      Meteor.http.call("GET", _XHR_URL_PREFIX+url, options,
-                       expect(function(error, result) {
-                         test.isFalse(error);
-                         if (! error) {
-                           test.equal(typeof result, "object");
-                           test.equal(result.statusCode, 200);
+      var callback = function(error, result) {
+        test.isFalse(error);
+        if (! error) {
+          test.equal(typeof result, "object");
+          test.equal(result.statusCode, 200);
 
-                           var data = result.data();
-                           test.equal(data.url, expected_url);
-                           test.equal(data.method, "GET");
-                         }
-                       }));
+          var data = result.data();
+          test.equal(data.url, expected_url);
+          test.equal(data.method, "GET");
+        }
+      };
+
+
+      Meteor.http.call("GET", _XHR_URL_PREFIX+url, options, expect(callback));
+
+      if (Meteor.is_server) {
+        // test sync version
+        var result = Meteor.http.call("GET", _XHR_URL_PREFIX+url, options);
+        callback(result.error, result);
+      }
     };
 
     basic_get("/foo", null, "/foo");
