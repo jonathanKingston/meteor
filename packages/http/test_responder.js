@@ -1,9 +1,10 @@
 
 var respond = function(req, res) {
-  var url = req.url;
 
   var response_data = {
-    url: url
+    method: req.method,
+    url: req.url,
+    headers: req.headers
   };
   var response_string = JSON.stringify(response_data);
 
@@ -15,7 +16,6 @@ var run_responder = function() {
 
   var app = __meteor_bootstrap__.app;
   app.stack.unshift({ route: '/test_responder', handle: respond });
-
 };
 
 run_responder();
