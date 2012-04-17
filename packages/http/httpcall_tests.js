@@ -2,9 +2,10 @@
 
 var _XHR_URL_PREFIX = "/test_responder";
 
-testAsyncMulti("httpcall - client basic", [
+testAsyncMulti("httpcall - basic", [
   function(test, expect) {
     var basic_get = function(url, options, expected_url) {
+
       Meteor.http.call("GET", _XHR_URL_PREFIX+url, options,
                        expect(function(error, result) {
                          test.isFalse(error);
