@@ -9,6 +9,7 @@ Package.on_use(function (api) {
 });
 
 Package.on_test(function (api) {
+  api.use('http', ['client', 'server']);
   api.use('test-helpers', ['client', 'server']);
 
   api.add_files('test_responder.js', 'server');

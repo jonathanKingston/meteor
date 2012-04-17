@@ -19,6 +19,10 @@ Meteor.http = Meteor.http || {};
 
     method = (method || "").toUpperCase();
 
+    callback = Meteor.bindEnvironment(callback, function(e) {
+      Meteor._debug("Exception in callback of Meteor.http.call");
+    });
+
     if (! /^https?:\/\//.test(url))
       throw new Error("url must be absolute and start with http:// or https://");
 
