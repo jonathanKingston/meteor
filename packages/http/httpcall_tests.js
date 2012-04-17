@@ -63,8 +63,10 @@ testAsyncMulti("httpcall - basic", [
     Meteor.http.call("GET", "http://asfd.asfd/", expect(
       function(error, result) {
         test.isTrue(error);
+        test.isTrue(result);
+        test.equal(error, result.error);
       }));
-
+    
   }
 ]);
 

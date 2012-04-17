@@ -35,7 +35,19 @@ Meteor.http = Meteor.http || {};
       });
     }
 
+    // wrap callback to always return a result object, and always
+    // have an 'error' property in result
+    callback = (function(callback) {
+      return function(error, result) {
+        result = result || {};
+        result.error = error;
+        callback(error, result);
+      };
+    })(callback);
+
+
     callback = _.once(callback); // only call the callback once!
+
 
     if (! /^https?:\/\//.test(url))
       throw new Error("url must be absolute and start with http:// or https://");
@@ -54,7 +66,7 @@ Meteor.http = Meteor.http || {};
 
 
     var httplib = (url_parts.protocol === "https" ? https : http);
-    // XXX make sync version
+
     var req = httplib.request(req_options, function(res) {
 
       var chunks = [];

@@ -15,6 +15,20 @@ Meteor.http = Meteor.http || {};
       throw new Error(
         "Can't make a blocking HTTP call from the client; callback required.");
 
+    // wrap callback to always return a result object, and always
+    // have an 'error' property in result
+    callback = (function(callback) {
+      return function(error, result) {
+        result = result || {};
+        result.error = error;
+        callback(error, result);
+      };
+    })(callback);
+
+
+    callback = _.once(callback); // only call the callback once!
+
+
     method = (method || "").toUpperCase();
     if (method !== "GET" && method !== "POST")
       throw new Error("HTTP method on client must be GET or POST.");
