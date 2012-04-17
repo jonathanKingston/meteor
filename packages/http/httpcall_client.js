@@ -23,9 +23,9 @@ Meteor.http = Meteor.http || {};
 
     url = url || "";
 
-    var query_match = /^(.*?)(?:\?(.*))?$/.exec(url);
+    var query_match = /^(.*?)(\?.*)?$/.exec(url);
     var url_without_query = query_match[1];
-    var query = query_match[2]; // undefined if no ? in url
+    var query = (query_match[2] ? query_match[2].slice(1) : null);
 
     if ("query" in options)
       query = String(options.query);

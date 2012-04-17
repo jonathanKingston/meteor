@@ -8,5 +8,9 @@ Package.on_use(function (api) {
 });
 
 Package.on_test(function (api) {
-  // XXX add tests
+  api.use('test-helpers', ['client', 'server']);
+
+  api.add_files('test_responder.js', 'server');
+  api.add_files('httpcall_client_tests.js', 'client');
+
 });
