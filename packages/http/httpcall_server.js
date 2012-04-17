@@ -19,8 +19,9 @@ Meteor.http = Meteor.http || {};
 
     method = (method || "").toUpperCase();
 
+    // Re-enter user code in a Fiber
     callback = Meteor.bindEnvironment(callback, function(e) {
-      Meteor._debug("Exception in callback of Meteor.http.call");
+      Meteor._debug("Exception in callback of Meteor.http.call", e.stack);
     });
 
     if (! /^https?:\/\//.test(url))
@@ -33,7 +34,7 @@ Meteor.http = Meteor.http || {};
 
     var req_options = {
       method: method,
-      host: url_parts.host,
+      host: url_parts.hostname,
       port: url_parts.port,
       path: path
     };
@@ -41,11 +42,7 @@ Meteor.http = Meteor.http || {};
 
     var httplib = (url_parts.protocol === "https" ? https : http);
     // XXX make sync version
-    httplib.request(req_options, function(error, res) {
-      if (error) {
-        callback(error);
-        return;
-      }
+    var req = httplib.request(req_options, function(res) {
 
       var chunks = [];
       res.setEncoding("utf8");
@@ -66,7 +63,6 @@ Meteor.http = Meteor.http || {};
             return JSON.parse(response.content());
           };
 
-          var error = null;
           if (res.statusCode >= 400)
             error = new Error("failed");
         }
@@ -75,10 +71,13 @@ Meteor.http = Meteor.http || {};
 
       };
 
-      res.on("end", finish);
-      res.on("error", finish);
+      res.on("end", finish); // calls finish()
+      res.on("error", finish); // calls finish(error)
     });
 
+    req.on("error", callback); // calls callback(error)
+
+    req.end();
   };
 
 })();
