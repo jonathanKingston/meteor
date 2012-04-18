@@ -166,3 +166,9 @@ testAsyncMulti("httpcall - basic", [
 // TO TEST:
 // - Redirects nofollow
 // - in IE
+// - form-encoding params
+// - https
+// - headers
+// - cookies?
+// - basicauth
+// - human-readable error reason/cause?
