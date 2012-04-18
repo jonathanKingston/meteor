@@ -66,7 +66,33 @@ testAsyncMulti("httpcall - basic", [
         test.isTrue(result);
         test.equal(error, result.error);
       }));
-    
+
+    Meteor.http.call("GET", _XHR_URL_PREFIX+"/redirect", expect(
+      function(error, result) {
+        test.isFalse(error);
+        test.isTrue(result);
+
+        // should be redirected transparently to /foo
+        test.equal(result.statusCode, 200);
+        var data = result.data();
+        test.equal(data.url, "/foo");
+        test.equal(data.method, "GET");
+      }));
+
+    Meteor.http.call("GET", _XHR_URL_PREFIX+"/fail", expect(
+      function(error, result) {
+        test.isTrue(error);
+        test.isTrue(result);
+        test.equal(error, result.error);
+
+        test.equal(result.statusCode, 500);
+      }));
+
   }
 ]);
 
+
+// TO TEST:
+// - HTTP error codes
+// - Redirects nofollow
+// - Timeout

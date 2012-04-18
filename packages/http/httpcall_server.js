@@ -2,8 +2,7 @@ Meteor.http = Meteor.http || {};
 
 (function() {
 
-  var http = __meteor_bootstrap__.require('http');
-  var https = __meteor_bootstrap__.require('https');
+  var request = __meteor_bootstrap__.require('request');
   var url_util = __meteor_bootstrap__.require('url');
 
 
@@ -54,55 +53,41 @@ Meteor.http = Meteor.http || {};
 
     var url_parts = url_util.parse(url);
 
-    var path = Meteor.http._buildPath(url_parts.pathname, url_parts.search,
-                                      options.query, options.params);
+    var new_url = Meteor.http._buildUrl(
+      url_parts.protocol+"//"+url_parts.host+url_parts.pathname,
+      url_parts.search, options.query, options.params);
+
 
     var req_options = {
+      url: new_url,
       method: method,
-      host: url_parts.hostname,
-      port: url_parts.port,
-      path: path
+      encoding: "utf8",
+      jar: false
     };
 
 
-    var httplib = (url_parts.protocol === "https" ? https : http);
+    request(req_options, function(error, res, body) {
 
-    var req = httplib.request(req_options, function(res) {
+      var response = null;
 
-      var chunks = [];
-      res.setEncoding("utf8");
-      res.on("data", function(chunk) {
-        chunks.push(chunk); });
+      if (! error) {
 
-      var finish = function(error) {
-        var response = null;
-
-        if (! error) {
-
-          response = {};
-          response.statusCode = res.statusCode;
-          response.content = function() {
-            return chunks.join('');
+        response = {};
+        response.statusCode = res.statusCode;
+        response.content = function() {
+          return body;
           };
-          response.data = function() {
-            return JSON.parse(response.content());
-          };
+        response.data = function() {
+          return JSON.parse(response.content());
+        };
 
-          if (res.statusCode >= 400)
-            error = new Error("failed");
-        }
+        if (res.statusCode >= 400)
+          error = new Error("failed");
+      }
 
-        callback(error, response);
+      callback(error, response);
 
-      };
-
-      res.on("end", finish); // calls finish()
-      res.on("error", finish); // calls finish(error)
     });
-
-    req.on("error", callback); // calls callback(error)
-
-    req.end();
 
     if (fut)
       return fut.wait(); // block in sync mode

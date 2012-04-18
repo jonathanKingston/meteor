@@ -3,7 +3,7 @@ Meteor.http = Meteor.http || {};
 
 (function() {
 
-  Meteor.http._buildPath = function(before_qmark, from_qmark, opt_query, opt_params) {
+  Meteor.http._buildUrl = function(before_qmark, from_qmark, opt_query, opt_params) {
     var url_without_query = before_qmark;
     var query = from_qmark ? from_qmark.slice(1) : null;
 

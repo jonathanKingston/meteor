@@ -36,8 +36,8 @@ Meteor.http = Meteor.http || {};
     var req = new XMLHttpRequest();
 
     var query_match = /^(.*?)(\?.*)?$/.exec(url);
-    url = Meteor.http._buildPath(query_match[1], query_match[2],
-                                 options.query, options.params);
+    url = Meteor.http._buildUrl(query_match[1], query_match[2],
+                                options.query, options.params);
 
 
     var xhr = new XMLHttpRequest();
