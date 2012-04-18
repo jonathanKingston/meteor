@@ -111,6 +111,31 @@ testAsyncMulti("httpcall - basic", [
         test.equal(data.method, "GET");
 
       }));
+  },
+  function(test, expect) {
+    var test_method = function(meth, should_throw) {
+      var maybe_expect = (should_throw ? _.identity : expect);
+      var func = function() {
+        Meteor.http.call(
+          meth, _XHR_URL_PREFIX+"/foo",
+          maybe_expect(function(error, result) {
+            test.isFalse(error);
+            test.isTrue(result);
+            test.equal(result.statusCode, 200);
+            var data = result.data();
+            test.equal(data.url, "/foo");
+            test.equal(data.method, meth);
+          }));
+      };
+      if (should_throw)
+        test.throws(func);
+      else
+        func();
+    };
+
+    test_method("POST");
+    test_method("PUT", Meteor.is_client);
+    test_method("DELETE", Meteor.is_client);
   }
 ]);
 
