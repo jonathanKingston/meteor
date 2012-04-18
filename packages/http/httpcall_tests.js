@@ -1,6 +1,7 @@
 
 
 var _XHR_URL_PREFIX = "/test_responder";
+var IN_MSIE = Meteor.is_client && $.browser.msie;
 
 testAsyncMulti("httpcall - basic", [
   function(test, expect) {
@@ -124,7 +125,8 @@ testAsyncMulti("httpcall - basic", [
             test.equal(result.statusCode, 200);
             var data = result.data();
             test.equal(data.url, "/foo");
-            test.equal(data.method, meth);
+            // IE turns bodyless POSTs into GETs. Go figure.
+            test.equal(data.method, IN_MSIE ? "GET" : meth);
           }));
       };
       if (should_throw)
@@ -165,7 +167,6 @@ testAsyncMulti("httpcall - basic", [
 
 // TO TEST:
 // - Redirects nofollow
-// - in IE
 // - form-encoding params
 // - https
 // - headers

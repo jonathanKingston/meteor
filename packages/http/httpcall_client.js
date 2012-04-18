@@ -33,8 +33,6 @@ Meteor.http = Meteor.http || {};
     if (method !== "GET" && method !== "POST")
       throw new Error("HTTP method on client must be GET or POST.");
 
-    var req = new XMLHttpRequest();
-
     var query_match = /^(.*?)(\?.*)?$/.exec(url);
     url = Meteor.http._buildUrl(query_match[1], query_match[2],
                                 options.query, options.params);
@@ -45,52 +43,64 @@ Meteor.http = Meteor.http || {};
       content = JSON.stringify(options.data);
 
 
-    var xhr = new XMLHttpRequest();
-    xhr.open(method, url, true);
+    // from this point on, errors are because of something remote, not
+    // something we should check in advance. Turn exceptions into error
+    // results.
+    try {
+      var xhr;
+      if (typeof XMLHttpRequest !== "undefined")
+        xhr = new XMLHttpRequest();
+      else if (typeof ActiveXObject !== "undefined")
+        xhr = new ActiveXObject("Microsoft.XMLHttp"); // IE6
+      else
+        throw new Error("Can't create XMLHttpRequest"); // ???
 
-    var timed_out = false;
-    var timer;
-    if (options.timeout) {
-      var timer = Meteor.setTimeout(function() {
-        timed_out = true;
-        xhr.abort();
-      }, options.timeout);
-    };
+      xhr.open(method, url, true);
 
+      var timed_out = false;
+      var timer;
+      if (options.timeout) {
+        timer = Meteor.setTimeout(function() {
+          timed_out = true;
+          xhr.abort();
+        }, options.timeout);
+      };
 
-    xhr.onreadystatechange = function(evt) {
-      if (xhr.readyState === 4) { // COMPLETE
-        if (timer)
-          Meteor.clearTimeout(timer);
+      xhr.onreadystatechange = function(evt) {
+        if (xhr.readyState === 4) { // COMPLETE
+          if (timer)
+            Meteor.clearTimeout(timer);
 
-        if (timed_out) {
-          callback(new Error("timed out"));
-        } else if (! xhr.status) {
-          // no HTTP response
-          callback(new Error("network"), null);
-        } else {
-          var response = {};
-          response.statusCode = xhr.status;
-          response.content = function() {
-            return xhr.responseText;
-          };
-          response.data = function() {
-            return JSON.parse(response.content());
-          };
+          if (timed_out) {
+            callback(new Error("timed out"));
+          } else if (! xhr.status) {
+            // no HTTP response
+            callback(new Error("network"));
+          } else {
+            var response = {};
+            response.statusCode = xhr.status;
+            response.content = function() {
+              return xhr.responseText;
+            };
+            response.data = function() {
+              return JSON.parse(response.content());
+            };
 
-          var error = null;
-          if (xhr.status >= 400)
-            error = new Error("failed");
+            var error = null;
+            if (xhr.status >= 400)
+              error = new Error("failed");
 
-          callback(error, response);
+            callback(error, response);
+          }
         }
-      }
-    };
+      };
 
-    xhr.send(content);
+      xhr.send(content);
+    } catch (err) {
+      callback(err);
+    }
+
   };
-
-
 
 
 })();
