@@ -136,9 +136,33 @@ testAsyncMulti("httpcall - basic", [
     test_method("POST");
     test_method("PUT", Meteor.is_client);
     test_method("DELETE", Meteor.is_client);
+  },
+  function(test, expect) {
+    Meteor.http.call(
+      "POST", _XHR_URL_PREFIX+"/foo",
+      { content: "Hello World!" },
+      expect(function(error, result) {
+        test.isFalse(error);
+        test.isTrue(result);
+        test.equal(result.statusCode, 200);
+        var data = result.data();
+        test.equal(data.body, "Hello World!");
+      }));
+
+    Meteor.http.call(
+      "POST", _XHR_URL_PREFIX+"/data-test",
+      { data: {greeting: "Hello World!"} },
+      expect(function(error, result) {
+        test.isFalse(error);
+        test.isTrue(result);
+        test.equal(result.statusCode, 200);
+        var data = result.data();
+        test.equal(data.body, {greeting: "Hello World!"});
+      }));
   }
 ]);
 
 
 // TO TEST:
 // - Redirects nofollow
+// - in IE

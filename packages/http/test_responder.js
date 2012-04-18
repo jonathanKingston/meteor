@@ -22,15 +22,29 @@ var respond = function(req, res) {
     return;
   }
 
-  var response_data = {
-    method: req.method,
-    url: req.url,
-    headers: req.headers
-  };
-  var response_string = JSON.stringify(response_data);
+  var chunks = [];
+  req.setEncoding("utf8");
+  req.on("data", function(chunk) {
+    chunks.push(chunk); });
+  req.on("end", function() {
+    var body = chunks.join('');
 
-  res.statusCode = 200;
-  res.end(response_string);
+    if (body.charAt(0) === '{') {
+      body = JSON.parse(body);
+    }
+
+    var response_data = {
+      method: req.method,
+      url: req.url,
+      headers: req.headers,
+      body: body
+    };
+    var response_string = JSON.stringify(response_data);
+
+    res.statusCode = 200;
+    res.end(response_string);
+  });
+
 };
 
 var run_responder = function() {

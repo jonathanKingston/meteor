@@ -40,6 +40,11 @@ Meteor.http = Meteor.http || {};
                                 options.query, options.params);
 
 
+    var content = options.content;
+    if (options.data)
+      content = JSON.stringify(options.data);
+
+
     var xhr = new XMLHttpRequest();
     xhr.open(method, url, true);
 
@@ -82,7 +87,7 @@ Meteor.http = Meteor.http || {};
       }
     };
 
-    xhr.send(null); // XXX post content
+    xhr.send(content);
   };
 
 

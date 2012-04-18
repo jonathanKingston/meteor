@@ -58,12 +58,17 @@ Meteor.http = Meteor.http || {};
       url_parts.search, options.query, options.params);
 
 
+    var content = options.content;
+    if (options.data)
+      content = JSON.stringify(options.data);
+
     var req_options = {
       url: new_url,
       method: method,
       encoding: "utf8",
       jar: false,
-      timeout: options.timeout
+      timeout: options.timeout,
+      body: content
     };
 
 
