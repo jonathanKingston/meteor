@@ -9,8 +9,7 @@ var url_prefix = function () {
   return _XHR_URL_PREFIX;
 };
 // Are we in IE?
-var IN_MSIE = Meteor.is_client && $.browser.msie;
-// XXX Actually this is only IE6--8! fixme!
+var IN_OLD_MSIE = Meteor.is_client && $.browser.msie && $.browser.version.substr(0,1) <= 8;
 
 testAsyncMulti("httpcall - basic", [
   function(test, expect) {
@@ -143,8 +142,9 @@ testAsyncMulti("httpcall - methods", [
             test.equal(result.statusCode, 200);
             var data = result.data();
             test.equal(data.url, "/foo");
-            // IE turns bodyless POSTs into GETs. Go figure.
-            test.equal(data.method, IN_MSIE ? "GET" : meth);
+            // IE <= 8 turns seems to turn POSTs with no body into
+            // GETs, inexplicably.
+            test.equal(data.method, IN_OLD_MSIE ? "GET" : meth);
           }));
       };
       if (should_throw)
