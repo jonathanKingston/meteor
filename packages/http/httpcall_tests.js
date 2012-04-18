@@ -99,11 +99,21 @@ testAsyncMulti("httpcall - basic", [
         test.isTrue(error);
         test.equal(error, result.error);
       }));
+    Meteor.http.call(
+      "GET", _XHR_URL_PREFIX+"/foo",
+      { timeout: 2000 },
+      expect(function(error, result) {
+        test.isFalse(error);
+        test.isTrue(result);
+        test.equal(result.statusCode, 200);
+        var data = result.data();
+        test.equal(data.url, "/foo");
+        test.equal(data.method, "GET");
+
+      }));
   }
 ]);
 
 
 // TO TEST:
-// - HTTP error codes
 // - Redirects nofollow
-// - Timeout
