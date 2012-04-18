@@ -1,15 +1,19 @@
 
-
+// URL prefix for tests to talk to
 var _XHR_URL_PREFIX = "/test_responder";
+var url_prefix = function () {
+  if (Meteor.is_server && _XHR_URL_PREFIX.indexOf("http") !== 0) {
+    var address = __meteor_bootstrap__.app.address();
+    _XHR_URL_PREFIX = "http://127.0.0.1:" + address.port + _XHR_URL_PREFIX;
+  }
+  return _XHR_URL_PREFIX;
+};
+// Are we in IE?
 var IN_MSIE = Meteor.is_client && $.browser.msie;
+// XXX Actually this is only IE6--8! fixme!
 
 testAsyncMulti("httpcall - basic", [
   function(test, expect) {
-    if (Meteor.is_server && _XHR_URL_PREFIX.indexOf("http") !== 0) {
-      var address = __meteor_bootstrap__.app.address();
-      _XHR_URL_PREFIX = "http://127.0.0.1:" + address.port + _XHR_URL_PREFIX;
-    }
-
     var basic_get = function(url, options, expected_url) {
 
       var callback = function(error, result) {
@@ -25,11 +29,11 @@ testAsyncMulti("httpcall - basic", [
       };
 
 
-      Meteor.http.call("GET", _XHR_URL_PREFIX+url, options, expect(callback));
+      Meteor.http.call("GET", url_prefix()+url, options, expect(callback));
 
       if (Meteor.is_server) {
         // test sync version
-        var result = Meteor.http.call("GET", _XHR_URL_PREFIX+url, options);
+        var result = Meteor.http.call("GET", url_prefix()+url, options);
         callback(result.error, result);
       }
     };
@@ -58,7 +62,10 @@ testAsyncMulti("httpcall - basic", [
     basic_get("/foo?bar", {params: {fruit: "apple", dog: "Spot the dog"},
                            query: ""},
               "/foo?fruit=apple&dog=Spot%20the%20dog");
-  },
+  }]);
+
+testAsyncMulti("httpcall - failure", [
+
   function(test, expect) {
 
     // Accessing unknown server (should fail to make any connection)
@@ -69,21 +76,8 @@ testAsyncMulti("httpcall - basic", [
         test.equal(error, result.error);
       }));
 
-    // Following redirect
-    Meteor.http.call("GET", _XHR_URL_PREFIX+"/redirect", expect(
-      function(error, result) {
-        test.isFalse(error);
-        test.isTrue(result);
-
-        // should be redirected transparently to /foo
-        test.equal(result.statusCode, 200);
-        var data = result.data();
-        test.equal(data.url, "/foo");
-        test.equal(data.method, "GET");
-      }));
-
     // Server serves 500
-    Meteor.http.call("GET", _XHR_URL_PREFIX+"/fail", expect(
+    Meteor.http.call("GET", url_prefix()+"/fail", expect(
       function(error, result) {
         test.isTrue(error);
         test.isTrue(result);
@@ -94,14 +88,14 @@ testAsyncMulti("httpcall - basic", [
 
     // Timeout
     Meteor.http.call(
-      "GET", _XHR_URL_PREFIX+"/slow",
+      "GET", url_prefix()+"/slow",
       { timeout: 200 },
       expect(function(error, result) {
         test.isTrue(error);
         test.equal(error, result.error);
       }));
     Meteor.http.call(
-      "GET", _XHR_URL_PREFIX+"/foo",
+      "GET", url_prefix()+"/foo",
       { timeout: 2000 },
       expect(function(error, result) {
         test.isFalse(error);
@@ -112,13 +106,37 @@ testAsyncMulti("httpcall - basic", [
         test.equal(data.method, "GET");
 
       }));
-  },
+  }]);
+
+testAsyncMulti("httpcall - redirect", [
+
   function(test, expect) {
+    // Following redirect
+    Meteor.http.call("GET", url_prefix()+"/redirect", expect(
+      function(error, result) {
+        test.isFalse(error);
+        test.isTrue(result);
+
+        // should be redirected transparently to /foo
+        test.equal(result.statusCode, 200);
+        var data = result.data();
+        test.equal(data.url, "/foo");
+        test.equal(data.method, "GET");
+      }));
+  }
+
+  // XXX turn off redirect and test
+]);
+
+testAsyncMulti("httpcall - methods", [
+
+  function(test, expect) {
+    // non-get methods
     var test_method = function(meth, should_throw) {
       var maybe_expect = (should_throw ? _.identity : expect);
       var func = function() {
         Meteor.http.call(
-          meth, _XHR_URL_PREFIX+"/foo",
+          meth, url_prefix()+"/foo",
           maybe_expect(function(error, result) {
             test.isFalse(error);
             test.isTrue(result);
@@ -139,9 +157,11 @@ testAsyncMulti("httpcall - basic", [
     test_method("PUT", Meteor.is_client);
     test_method("DELETE", Meteor.is_client);
   },
+
   function(test, expect) {
+    // contents and data
     Meteor.http.call(
-      "POST", _XHR_URL_PREFIX+"/foo",
+      "POST", url_prefix()+"/foo",
       { content: "Hello World!" },
       expect(function(error, result) {
         test.isFalse(error);
@@ -152,7 +172,7 @@ testAsyncMulti("httpcall - basic", [
       }));
 
     Meteor.http.call(
-      "POST", _XHR_URL_PREFIX+"/data-test",
+      "POST", url_prefix()+"/data-test",
       { data: {greeting: "Hello World!"} },
       expect(function(error, result) {
         test.isFalse(error);
@@ -173,3 +193,4 @@ testAsyncMulti("httpcall - basic", [
 // - cookies?
 // - basicauth
 // - human-readable error reason/cause?
+// - data parse error

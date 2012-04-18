@@ -14,7 +14,5 @@ Package.on_test(function (api) {
   api.use('test-helpers', ['client', 'server']);
 
   api.add_files('test_responder.js', 'server');
-
   api.add_files('httpcall_tests.js', ['client', 'server']);
-
 });

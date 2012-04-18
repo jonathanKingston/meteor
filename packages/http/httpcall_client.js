@@ -3,6 +3,9 @@ Meteor.http = Meteor.http || {};
 (function() {
 
   Meteor.http.call = function(method, url, options, callback) {
+
+    ////////// Process arguments //////////
+
     if (! callback && typeof options === "function") {
       // support (method, url, callback) argument list
       callback = options;
@@ -15,6 +18,21 @@ Meteor.http = Meteor.http || {};
       throw new Error(
         "Can't make a blocking HTTP call from the client; callback required.");
 
+    method = (method || "").toUpperCase();
+    // XXX why?
+    if (method !== "GET" && method !== "POST")
+      throw new Error("HTTP method on client must be GET or POST.");
+
+    var query_match = /^(.*?)(\?.*)?$/.exec(url);
+    url = Meteor.http._buildUrl(query_match[1], query_match[2],
+                                options.query, options.params);
+
+    var content = options.content;
+    if (options.data)
+      content = JSON.stringify(options.data);
+
+    ////////// Callback wrapping //////////
+
     // wrap callback to always return a result object, and always
     // have an 'error' property in result
     callback = (function(callback) {
@@ -25,28 +43,17 @@ Meteor.http = Meteor.http || {};
       };
     })(callback);
 
-
-    callback = _.once(callback); // only call the callback once!
-
-
-    method = (method || "").toUpperCase();
-    if (method !== "GET" && method !== "POST")
-      throw new Error("HTTP method on client must be GET or POST.");
-
-    var query_match = /^(.*?)(\?.*)?$/.exec(url);
-    url = Meteor.http._buildUrl(query_match[1], query_match[2],
-                                options.query, options.params);
+    // safety belt: only call the callback once.
+    callback = _.once(callback);
 
 
-    var content = options.content;
-    if (options.data)
-      content = JSON.stringify(options.data);
-
+    ////////// Kickoff! //////////
 
     // from this point on, errors are because of something remote, not
     // something we should check in advance. Turn exceptions into error
     // results.
     try {
+      // setup XHR object
       var xhr;
       if (typeof XMLHttpRequest !== "undefined")
         xhr = new XMLHttpRequest();
@@ -57,6 +64,7 @@ Meteor.http = Meteor.http || {};
 
       xhr.open(method, url, true);
 
+      // setup timeout
       var timed_out = false;
       var timer;
       if (options.timeout) {
@@ -66,13 +74,14 @@ Meteor.http = Meteor.http || {};
         }, options.timeout);
       };
 
+      // callback on complete
       xhr.onreadystatechange = function(evt) {
         if (xhr.readyState === 4) { // COMPLETE
           if (timer)
             Meteor.clearTimeout(timer);
 
           if (timed_out) {
-            callback(new Error("timed out"));
+            callback(new Error("timeout"));
           } else if (! xhr.status) {
             // no HTTP response
             callback(new Error("network"));
@@ -95,7 +104,9 @@ Meteor.http = Meteor.http || {};
         }
       };
 
+      // send it on its way
       xhr.send(content);
+
     } catch (err) {
       callback(err);
     }

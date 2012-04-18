@@ -8,6 +8,8 @@ Meteor.http = Meteor.http || {};
 
   Meteor.http.call = function(method, url, options, callback) {
 
+    ////////// Process arguments //////////
+
     if (! callback && typeof options === "function") {
       // support (method, url, callback) argument list
       callback = options;
@@ -18,6 +20,22 @@ Meteor.http = Meteor.http || {};
 
     method = (method || "").toUpperCase();
 
+    if (! /^https?:\/\//.test(url))
+      throw new Error("url must be absolute and start with http:// or https://");
+
+    var url_parts = url_util.parse(url);
+
+    var new_url = Meteor.http._buildUrl(
+      url_parts.protocol+"//"+url_parts.host+url_parts.pathname,
+      url_parts.search, options.query, options.params);
+
+
+    var content = options.content;
+    if (options.data)
+      content = JSON.stringify(options.data);
+
+
+    ////////// Callback wrapping //////////
 
     var fut;
     if (! callback) {
@@ -44,23 +62,11 @@ Meteor.http = Meteor.http || {};
       };
     })(callback);
 
-
-    callback = _.once(callback); // only call the callback once!
-
-
-    if (! /^https?:\/\//.test(url))
-      throw new Error("url must be absolute and start with http:// or https://");
-
-    var url_parts = url_util.parse(url);
-
-    var new_url = Meteor.http._buildUrl(
-      url_parts.protocol+"//"+url_parts.host+url_parts.pathname,
-      url_parts.search, options.query, options.params);
+    // safety belt: only call the callback once.
+    callback = _.once(callback);
 
 
-    var content = options.content;
-    if (options.data)
-      content = JSON.stringify(options.data);
+    ////////// Kickoff! //////////
 
     var req_options = {
       url: new_url,
@@ -71,9 +77,7 @@ Meteor.http = Meteor.http || {};
       body: content
     };
 
-
     request(req_options, function(error, res, body) {
-
       var response = null;
 
       if (! error) {
@@ -95,8 +99,9 @@ Meteor.http = Meteor.http || {};
 
     });
 
+    // If we're in sync mode, block and return the result.
     if (fut)
-      return fut.wait(); // block in sync mode
+      return fut.wait();
   };
 
 })();
