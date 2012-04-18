@@ -31,6 +31,10 @@ Meteor.http = Meteor.http || {};
     if (options.data)
       content = JSON.stringify(options.data);
 
+    if (options.followRedirects === false)
+      throw new Error("Option followRedirects:false not supported on client.");
+
+
     ////////// Callback wrapping //////////
 
     // wrap callback to always return a result object, and always

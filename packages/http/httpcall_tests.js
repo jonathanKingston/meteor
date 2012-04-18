@@ -110,7 +110,7 @@ testAsyncMulti("httpcall - failure", [
 testAsyncMulti("httpcall - redirect", [
 
   function(test, expect) {
-    // Following redirect
+    // Test that we follow redirects by default
     Meteor.http.call("GET", url_prefix()+"/redirect", expect(
       function(error, result) {
         test.isFalse(error);
@@ -122,9 +122,39 @@ testAsyncMulti("httpcall - redirect", [
         test.equal(data.url, "/foo");
         test.equal(data.method, "GET");
       }));
+
+    // followRedirect option; can't be false on client
+    _.each([false, true], function(followRedirects) {
+      var do_it = function(should_work) {
+        var maybe_expect = should_work ? expect : _.identity;
+        Meteor.http.call(
+          "GET", url_prefix()+"/redirect",
+          {followRedirects: followRedirects},
+          maybe_expect(function(error, result) {
+            test.isFalse(error);
+            test.isTrue(result);
+
+            if (followRedirects) {
+              // should be redirected transparently to /foo
+              test.equal(result.statusCode, 200);
+              var data = result.data();
+              test.equal(data.url, "/foo");
+              test.equal(data.method, "GET");
+            } else {
+              // should see redirect
+              test.equal(result.statusCode, 301);
+            }
+          }));
+      };
+      if (Meteor.is_client && ! followRedirects) {
+        // not supported, should fail
+        test.throws(do_it);
+      } else {
+        do_it(true);
+      }
+    });
   }
 
-  // XXX turn off redirect and test
 ]);
 
 testAsyncMulti("httpcall - methods", [
@@ -186,7 +216,6 @@ testAsyncMulti("httpcall - methods", [
 
 
 // TO TEST:
-// - Redirects nofollow
 // - form-encoding params
 // - https
 // - headers

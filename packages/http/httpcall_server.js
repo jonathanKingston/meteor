@@ -74,7 +74,8 @@ Meteor.http = Meteor.http || {};
       encoding: "utf8",
       jar: false,
       timeout: options.timeout,
-      body: content
+      body: content,
+      followRedirect: options.followRedirects
     };
 
     request(req_options, function(error, res, body) {
