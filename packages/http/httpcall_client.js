@@ -43,9 +43,24 @@ Meteor.http = Meteor.http || {};
     var xhr = new XMLHttpRequest();
     xhr.open(method, url, true);
 
+    var timed_out = false;
+    var timer;
+    if (options.timeout) {
+      var timer = Meteor.setTimeout(function() {
+        timed_out = true;
+        xhr.abort();
+      }, options.timeout);
+    };
+
+
     xhr.onreadystatechange = function(evt) {
       if (xhr.readyState === 4) { // COMPLETE
-        if (! xhr.status) {
+        if (timer)
+          Meteor.clearTimeout(timer);
+
+        if (timed_out) {
+          callback(new Error("timed out"));
+        } else if (! xhr.status) {
           // no HTTP response
           callback(new Error("network"), null);
         } else {

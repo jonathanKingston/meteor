@@ -62,7 +62,8 @@ Meteor.http = Meteor.http || {};
       url: new_url,
       method: method,
       encoding: "utf8",
-      jar: false
+      jar: false,
+      timeout: options.timeout
     };
 
 

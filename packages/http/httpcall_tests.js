@@ -60,6 +60,7 @@ testAsyncMulti("httpcall - basic", [
   },
   function(test, expect) {
 
+    // Accessing unknown server (should fail to make any connection)
     Meteor.http.call("GET", "http://asfd.asfd/", expect(
       function(error, result) {
         test.isTrue(error);
@@ -67,6 +68,7 @@ testAsyncMulti("httpcall - basic", [
         test.equal(error, result.error);
       }));
 
+    // Following redirect
     Meteor.http.call("GET", _XHR_URL_PREFIX+"/redirect", expect(
       function(error, result) {
         test.isFalse(error);
@@ -79,6 +81,7 @@ testAsyncMulti("httpcall - basic", [
         test.equal(data.method, "GET");
       }));
 
+    // Server serves 500
     Meteor.http.call("GET", _XHR_URL_PREFIX+"/fail", expect(
       function(error, result) {
         test.isTrue(error);
@@ -88,6 +91,14 @@ testAsyncMulti("httpcall - basic", [
         test.equal(result.statusCode, 500);
       }));
 
+    // Timeout
+    Meteor.http.call(
+      "GET", _XHR_URL_PREFIX+"/slow",
+      { timeout: 200 },
+      expect(function(error, result) {
+        test.isTrue(error);
+        test.equal(error, result.error);
+      }));
   }
 ]);
 
