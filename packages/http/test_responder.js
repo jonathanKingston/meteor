@@ -1,4 +1,3 @@
-
 var TEST_RESPONDER_ROUTE = "/test_responder";
 
 var respond = function(req, res) {
@@ -20,6 +19,16 @@ var respond = function(req, res) {
     res.setHeader("Location", TEST_RESPONDER_ROUTE+"/foo");
     res.end("REDIRECT TO FOO");
     return;
+  } else if (req.url.slice(0,6) === "/login") {
+    var connect = __meteor_bootstrap__.require('connect');
+    // get password from query string
+    var checker = connect.basicAuth('meteor', req.url.slice(7));
+    var success = false;
+    checker(req, res, function() {
+      success = true;
+    });
+    if (! success)
+      return;
   }
 
   var chunks = [];
