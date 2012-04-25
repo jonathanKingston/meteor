@@ -103,12 +103,10 @@ var PackageInstance = function (pkg, bundle) {
     // inside this package, INCLUDING leading dots.
     registered_extensions: function () {
       var ret = _.keys(self.pkg.extensions);
-
       for (var id in self.using) {
         var other_inst = self.using[id];
         ret = _.union(ret, _.keys(other_inst.pkg.extensions));
       }
-
       return _.map(ret, function (x) {return "." + x;});
     },
 
@@ -145,7 +143,7 @@ _.extend(PackageInstance.prototype, {
   get_source_handler: function (extension) {
     var self = this;
     var candidates = []
-
+   
     if (extension in self.pkg.extensions)
       candidates.push(self.pkg.extensions[extension]);
 
@@ -159,8 +157,13 @@ _.extend(PackageInstance.prototype, {
     // XXX do something more graceful than printing a stack trace and
     // exiting!! we have higher standards than that!
 
-    if (!candidates.length)
+    if (!candidates.length) {
+      shortExtension = path.extname(extension).substr(1);
+      if(extension != shortExtension) {
+        return self.get_source_handler(shortExtension);
+      }
       return null;
+    }
 
     if (candidates.length > 1)
       // XXX improve error message (eg, name the packages involved)
@@ -179,7 +182,12 @@ _.extend(PackageInstance.prototype, {
       return;
     self.files[where][rel_path] = true;
 
-    var ext = path.extname(rel_path).substr(1);
+    //Old way doesn't handle multi extensions like .html.js
+    //var ext = path.extname(rel_path).substr(1);
+
+    exsplit = rel_path.split('.');
+    exsplit.shift();
+    ext = exsplit.join('.');
     var handler = self.get_source_handler(ext);
     if (!handler) {
       // A package included a source file that we don't have a
@@ -297,6 +305,8 @@ var Bundle = function () {
           if (w !== "client")
             throw new Error("HTML segments can only go to the client");
           self[options.type].push(data);
+        } else if(options.type === "xml") {
+          self.files.client[options.path] = data;
         } else {
           throw new Error("Unknown type " + options.type);
         }
